@@ -1,11 +1,16 @@
 package main
 
 import (
-	filebeat "github.com/elastic/beats/filebeat/beat"
-	"github.com/elastic/beats/libbeat/beat"
+        filebeat "github.com/elastic/beats/filebeat/beat"
+        "github.com/elastic/beats/libbeat/beat"
+
+        "fmt"
+        "git.dhpark.lab/dhpark/tools/ps"
+        "os"
+        "strconv"
 )
 
-var Version = "1.2.3"
+var Version = "1.2.3-pdh"
 var Name = "filebeat"
 
 // The basic model of execution:
@@ -18,5 +23,26 @@ var Name = "filebeat"
 // determine where in each file to restart a harvester.
 
 func main() {
-	beat.Run(Name, Version, filebeat.New())
+
+        // create .pid file
+        filename := os.Args[0] + ".pid"
+        if ps.IsAliveByPidFile(filename) {
+                fmt.Println("FileBeat Already Running!")
+                return
+        }
+        pid_file, err := os.Create(filename)
+
+        defer pid_file.Close()
+        if err == nil {
+                pid := os.Getpid()
+                pid_str := strconv.Itoa(pid)
+                pid_file.Write([]byte(pid_str))
+        }
+
+        beat.Run(Name, Version, filebeat.New())
+
+        if _, err := os.Stat(filename); err == nil {
+                os.Remove(filename)
+        }
+
 }
